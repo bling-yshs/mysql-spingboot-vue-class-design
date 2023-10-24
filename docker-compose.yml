@@ -1,0 +1,51 @@
+version: "3"
+services:
+  mysql:
+    image: mysql:8 # 使用的镜像
+    container_name: mysql # 启动的实例名称
+    environment:
+      LANG: C.UTF-8
+      MYSQL_ROOT_PASSWORD: 123456 # root 用户密码
+      TZ: Asia/Shanghai
+      MYSQL_TCP_PORT: 4407
+    ports:
+      - "4407:4407" # 端口映射
+    volumes:
+      - ./.mysql-data:/var/lib/mysql # 将数据目录挂载到本地目录以进行持久化
+      - ./mysql-init:/docker-entrypoint-initdb.d # 自动执行启动脚本
+    command:
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_general_ci
+      --explicit_defaults_for_timestamp=true
+      --lower_case_table_names=1
+      --max_allowed_packet=128M
+    networks:
+      - myNetwork # 指定网络
+
+  springboot3:
+    container_name: springboot3
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - myNetwork
+    depends_on:
+      - mysql
+
+  node-nginx:
+    container_name: node-nginx
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - myNetwork
+    depends_on:
+      - springboot3
+
+networks:
+  myNetwork:
+    driver: bridge
